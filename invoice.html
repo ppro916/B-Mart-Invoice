@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billing Invoice</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f2f2f2; }
+    nav {
+      background: #222;
+      color: #fff;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .inputs { display: flex; gap: 10px; flex-wrap: wrap; }
+    input, button { padding: 0.5rem; font-size: 1rem; }
+    #barcodeSection {
+      padding: 1rem;
+      background: #fff;
+      margin: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    #invoice {
+      margin: 1rem;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { padding: 0.75rem; border-bottom: 1px solid #ccc; text-align: center; }
+    .total {
+      font-size: 1.8rem;
+      color: #0a930a;
+      text-align: right;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+    .popup, .calculator-popup {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+      width: 70%;
+    }
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      z-index: 5;
+    }
+    .highlight {
+      background-color: #d0ebff !important;
+      transition: background-color 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div style="font-size: 1.5rem; font-weight: bold;">
+      B-Mart Billing System</div>
+    <div class="inputs">
+      <button onclick="openPopup()">Add New Item</button>
+      <button onclick="openCalculator()">Calculator</button>
+    </div>
+    <div>
+      <button class="admin-access" onclick="accessAdmin()" title="Admin Access">🔐 Admin Panel</button>
+    </div>
+  </nav>
+
+  <div id="barcodeSection">
+    <input type="text" id="barcodeInput" placeholder="Enter Barcode" style="padding: 0.75rem; font-size: 1rem; width: 100%; max-width: 300px;" />
+  </div>
+
+  <!-- तुमचं मूळ कोड जसंच्या तसं ठेवलं आहे, आणि खाली staffName आणि script जोडले आहे -->
+...
+  </div>
+
+  <div id="invoice">
+    <h2>Invoice</h2>
+    <div id="datetime" style="text-align: right; font-weight: bold; margin-top: 10px;"></div>
+    <table id="productTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Weight</th>
+          <th>MRP</th>
+          <th>Rate</th>
+          <th>Qty</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="total" id="totalDisplay">Your MRP Total: ₹0</div>
+
+    <!-- ✅ Billing Staff Name Display -->
+    <div style="text-align: right; font-weight: bold; padding: 1rem;">
+      <span id="staffName">Billing Staff: </span>
+    </div>
+  </div>
+...
+
+<!-- ✅ Login Script add केला window.onload ला -->
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyD8b6Cw0QjJu-k7OJHA0foCPcjJoXrC2-0",
+    authDomain: "billingsystemapp-65d4c.firebaseapp.com",
+    projectId: "billingsystemapp-65d4c",
+    storageBucket: "billingsystemapp-65d4c.appspot.com",
+    messagingSenderId: "67583653779",
+    appId: "1:67583653779:web:e37b600d51b09f9e4f9a66"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let loggedInUserName = "";
+
+
+
+
+
+
+
+async function login() {
+  const username = prompt("🧑 Enter Username:");
+  if (!username) {
+    alert("⚠️ Username is required!");
+    location.reload();
+    return;
+  }
+
+  const password = prompt("🔒 Enter Password:");
+  if (!password) {
+    alert("⚠️ Password is required!");
+    location.reload();
+    return;
+  }
+
+  try {
+    const userDoc = await db.collection("users").doc(username).get();
+    if (userDoc.exists && userDoc.data().password === password) {
+      loggedInUserName = userDoc.data().name;
+      document.getElementById("staffName").textContent = `Billing Staff: ${loggedInUserName}`;
+    } else {
+      alert("❌ Invalid username or password.");
+      location.reload();
+    }
+  } catch (error) {
+    alert("❌ Login error: " + error.message);
+    location.reload();
+  }
+}
+  
+  
+
+  // ✅ Page load वर login popup
+  window.addEventListener("load", () => {
+    login();
+  });
+  
+  
+  
+  
+  
+</script>
+
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Add Item Popup -->
+  <div class="popup" id="popup">
+    <input type="text" id="pname" placeholder="Product Name">
+    <input type="text" id="pbarcode" placeholder="Barcode">
+    <input type="text" id="pweight" placeholder="Weight">
+    <input type="number" id="pcmrp" placeholder="Company MRP">
+    <input type="number" id="pymrp" placeholder="Your MRP">
+    <button onclick="addItemToFirebase()">Add Item</button>
+    <button onclick="closePopup()">Cancel</button>
+  </div>
+
+  <!-- Calculator Popup -->
+  <div class="calculator-popup popup" id="calculatorPopup">
+    <input type="text" id="calcDisplay" readonly style="font-size: 1.5rem; padding: 0.5rem;">
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+      <button onclick="appendCalc('7')">7</button>
+      <button onclick="appendCalc('8')">8</button>
+      <button onclick="appendCalc('9')">9</button>
+      <button onclick="appendCalc('/')">÷</button>
+      <button onclick="appendCalc('4')">4</button>
+      <button onclick="appendCalc('5')">5</button>
+      <button onclick="appendCalc('6')">6</button>
+      <button onclick="appendCalc('*')">×</button>
+      <button onclick="appendCalc('1')">1</button>
+      <button onclick="appendCalc('2')">2</button>
+      <button onclick="appendCalc('3')">3</button>
+      <button onclick="appendCalc('-')">−</button>
+      <button onclick="appendCalc('0')">0</button>
+      <button onclick="appendCalc('.')">.</button>
+      <button onclick="calculate()">=</button>
+      <button onclick="appendCalc('+')">+</button>
+      <button onclick="clearCalc()" style="grid-column: span 2;">Clear</button>
+      <button onclick="closeCalculator()" style="grid-column: span 2;">Close</button>
+    </div>
+  </div>
+
+  <script>
+  
+
+    const barcodeInput = document.getElementById("barcodeInput");
+    const tableBody = document.querySelector("#productTable tbody");
+    const totalDisplay = document.getElementById("totalDisplay");
+    let items = [];
+    let highlightedIndex = null;
+
+    barcodeInput.addEventListener("keypress", async function(e) {
+      if (e.key === "Enter") {
+        const code = barcodeInput.value.trim();
+        if (!code) return;
+        const doc = await db.collection("products").doc(code).get();
+        if (doc.exists) {
+          const data = doc.data();
+          const existingIndex = items.findIndex(i => i.barcode === code);
+          if (existingIndex !== -1) {
+            items[existingIndex].qty++;
+            highlightedIndex = existingIndex;
+          } else {
+            items.push({ ...data, barcode: code, qty: 1 });
+            highlightedIndex = items.length - 1;
+          }
+          renderTable();
+          barcodeInput.value = "";
+        } else {
+          alert("Item not found in database!");
+        }
+      }
+    });
+
+    function updateDateTime() {
+      const now = new Date();
+      const formatted = now.toLocaleString('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      });
+      document.getElementById('datetime').textContent = `Date & Time: ${formatted}`;
+    }
+    updateDateTime();
+
+    function renderTable() {
+      tableBody.innerHTML = "";
+      let total = 0;
+      items.forEach((item, index) => {
+        total += item.ymrp * item.qty;
+        const row = document.createElement("tr");
+        if (index === highlightedIndex) row.classList.add("highlight");
+        row.innerHTML = `
+          <td>${item.name}</td>
+          <td>${item.weight}</td>
+          <td>₹${item.cmrp}</td>
+          <td>₹${item.ymrp}</td>
+          <td>
+            <button onclick="changeQty(${index}, 1)">+</button>
+            <input type="number" min="1" value="${item.qty}" style="width: 50px;" onchange="updateQty(${index}, this.value)">
+            <button onclick="changeQty(${index}, -1)">-</button>
+          </td>
+          <td><button onclick="confirmDelete(${index})">Delete</button></td>
+        `;
+        tableBody.appendChild(row);
+      });
+      totalDisplay.textContent = `Your MRP Total: ₹${total}`;
+    }
+
+    function updateQty(index, value) {
+      const qty = parseFloat(value);
+      if (!isNaN(qty) && qty > 0) {
+        items[index].qty = qty;
+        renderTable();
+      } else {
+        confirmDelete(index);
+      }
+    }
+
+    function changeQty(index, delta) {
+      items[index].qty += delta;
+      if (items[index].qty <= 0) confirmDelete(index);
+      else renderTable();
+    }
+
+    function confirmDelete(index) {
+      if (confirm("Are you sure you want to delete this item?")) {
+        items.splice(index, 1);
+        renderTable();
+      }
+    }
+
+    function openPopup() {
+      document.getElementById("popup").style.display = "flex";
+      document.getElementById("overlay").style.display = "block";
+    }
+
+    function closePopup() {
+      document.getElementById("popup").style.display = "none";
+      document.getElementById("overlay").style.display = "none";
+    }
+
+    async function addItemToFirebase() {
+      const name = document.getElementById("pname").value.trim();
+      const barcode = document.getElementById("pbarcode").value.trim();
+      const weight = document.getElementById("pweight").value.trim();
+      const cmrp = parseFloat(document.getElementById("pcmrp").value);
+      const ymrp = parseFloat(document.getElementById("pymrp").value);
+
+      if (!name || !barcode || !weight || isNaN(cmrp) || isNaN(ymrp)) {
+        alert("Please fill all fields correctly.");
+        return;
+      }
+
+      try {
+        const existingDoc = await db.collection("products").doc(barcode).get();
+        if (existingDoc.exists) {
+          alert("❌ Item with this barcode already exists in Firebase!");
+          return;
+        }
+
+        await db.collection("products").doc(barcode).set({ name, weight, cmrp, ymrp });
+        alert("✅ Item added to Firebase successfully!");
+        closePopup();
+        document.getElementById("pname").value = "";
+        document.getElementById("pbarcode").value = "";
+        document.getElementById("pweight").value = "";
+        document.getElementById("pcmrp").value = "";
+        document.getElementById("pymrp").value = "";
+      } catch (error) {
+        alert("Error adding item: " + error.message);
+        console.error(error);
+      }
+    }
+
+    function openCalculator() {
+      document.getElementById("calculatorPopup").style.display = "flex";
+      document.getElementById("overlay").style.display = "block";
+    }
+
+    function closeCalculator() {
+      document.getElementById("calculatorPopup").style.display = "none";
+      document.getElementById("overlay").style.display = "none";
+    }
+
+    function appendCalc(val) {
+      const display = document.getElementById("calcDisplay");
+      display.value += val;
+    }
+
+    function clearCalc() {
+      document.getElementById("calcDisplay").value = "";
+    }
+
+    function calculate() {
+      try {
+        const display = document.getElementById("calcDisplay");
+        display.value = eval(display.value).toFixed(2);
+      } catch {
+        alert("Invalid expression");
+      }
+    }
+
+    function accessAdmin() {
+      const adminPassword = prompt("Enter admin access password:");
+      if (adminPassword === "chiki") {
+        window.location.href = "admin.html";
+      } else if (adminPassword) {
+        alert("❌ Incorrect password!");
+      }
+    }
+  </script>
+</body>
+</html>

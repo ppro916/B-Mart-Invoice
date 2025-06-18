@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading Page</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background-color: #000000;
+      font-family: sans-serif;
+    }
+
+    img {
+      width: 80%;
+      height: auto;
+    }
+    
+    h2 {
+      font-size: 30pt;
+      color: grey;
+      -webkit-text-stroke-color: greenyellow;
+    }
+
+    .progress-container {
+      width: 80%;
+      height: 20px;
+      background-color: #000000;
+      border-radius: 10px;
+      margin-top: 20px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background-color: #4CAF50;
+      animation: fillProgress 3s forwards;
+    }
+
+    @keyframes fillProgress {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <img src="bmart_logo.webp" alt="Loading Image" />
+  
+  <h2>
+    Devloper:- Moreshwar Bhonde
+  </h2>
+
+  <div class="progress-container">
+    <div class="progress-bar"></div>
+  </div>
+
+  <script>
+    // 3 seconds नंतर redirect होईल
+    setTimeout(() => {
+      window.location.href = "invoice.html"; // Replace with your destination page
+    }, 3000);
+  </script>
+
+</body>
+</html>

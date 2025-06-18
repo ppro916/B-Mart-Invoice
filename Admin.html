@@ -1,0 +1,101 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - B-Mart</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 0; }
+    header { background: #343a40; color: white; padding: 1rem; text-align: center; font-size: 1.5rem; }
+    main { padding: 2rem; max-width: 800px; margin: auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h2 { margin-bottom: 1rem; }
+    input, button { padding: 0.5rem; font-size: 1rem; margin: 0.5rem 0; width: 100%; }
+    table { width: 100%; margin-top: 2rem; border-collapse: collapse; }
+    th, td { padding: 0.5rem; border: 1px solid #ccc; text-align: center; }
+    .btn { background: #007bff; color: white; border: none; cursor: pointer; }
+    .btn:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <header>🛍️ Admin Panel - B-Mart</header>
+  <main>
+    <h2>➕ Register New Counter User</h2>
+    <input type="text" id="staffName" placeholder="Full Name">
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button class="btn" onclick="registerUser()">Register</button><h2>👥 All Users</h2>
+<table>
+  <thead>
+    <tr><th>Name</th><th>Username</th><th>Action</th></tr>
+  </thead>
+  <tbody id="userList"></tbody>
+</table>
+
+<h2>🕒 User Logs</h2>
+<table>
+  <thead>
+    <tr><th>Username</th><th>Date</th><th>Entry Count</th><th>Exit Count</th></tr>
+  </thead>
+  <tbody id="logTableBody"></tbody>
+</table>
+
+  </main>  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8b6Cw0QjJu-k7OJHA0foCPcjJoXrC2-0",
+      authDomain: "billingsystemapp-65d4c.firebaseapp.com",
+      projectId: "billingsystemapp-65d4c",
+      storageBucket: "billingsystemapp-65d4c.appspot.com",
+      messagingSenderId: "67583653779",
+      appId: "1:67583653779:web:e37b600d51b09f9e4f9a66"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    async function registerUser() {
+      const name = document.getElementById('staffName').value.trim();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!name || !username || !password) return alert("Please fill all fields");
+
+      const userRef = db.collection("staff").doc(username);
+      const doc = await userRef.get();
+      if (doc.exists) return alert("User already exists");
+
+      await userRef.set({ name, username, password });
+      alert("User registered successfully");
+      document.getElementById('staffName').value = "";
+      document.getElementById('username').value = "";
+      document.getElementById('password').value = "";
+      loadUsers();
+    }
+
+    async function loadUsers() {
+      const tbody = document.getElementById('userList');
+      tbody.innerHTML = "";
+      const snapshot = await db.collection("staff").get();
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = `<tr><td>${data.name}</td><td>${data.username}</td><td><button onclick=\"loadUserLog('${data.username}')\">📄 Logs</button></td></tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    async function loadUserLog(username) {
+      const tbody = document.getElementById("logTableBody");
+      tbody.innerHTML = "";
+      const logDoc = await db.collection("usersLog").doc(username).get();
+      const data = logDoc.data();
+      if (!data) return;
+      for (let date in data) {
+        const log = data[date].log;
+        let inCount = log.filter(entry => entry.type === "in").length;
+        let outCount = log.filter(entry => entry.type === "out").length;
+        tbody.innerHTML += `<tr><td>${username}</td><td>${date}</td><td>${inCount}</td><td>${outCount}</td></tr>`;
+      }
+    }
+
+    window.onload = loadUsers;
+  </script></body>
+</html>
