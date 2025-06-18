@@ -154,7 +154,7 @@ async function login() {
   }
 
   try {
-    const userDoc = await db.collection("users").doc(username).get();
+    const userDoc = await db.collection("staff").doc(username).get();
     if (userDoc.exists && userDoc.data().password === password) {
       loggedInUserName = userDoc.data().name;
       document.getElementById("staffName").textContent = `Billing Staff: ${loggedInUserName}`;
