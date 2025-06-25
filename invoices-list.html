@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>All Invoices</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: Arial; padding: 1rem; background: #f2f2f2; }
+    input { padding: 0.5rem; margin: 0.5rem; }
+    button { padding: 0.5rem 1rem; margin-left: 0.5rem; }
+    .invoice-item {
+      background: #fff; margin: 1rem 0; padding: 1rem; border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1); cursor: pointer;
+    }
+    .invoice-details {
+      background: #eef; margin-top: 10px; padding: 1rem; border-radius: 10px;
+    }
+    .bold { font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>📜 All Invoices</h2>
+
+  <div>
+    <input type="text" id="searchDate" placeholder="Search by Date (dd-mm-yyyy)">
+    <input type="text" id="searchBill" placeholder="Search by Bill No">
+    <button onclick="loadInvoices()">🔍 Search</button>
+  </div>
+
+  <div id="invoiceList"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8b6Cw0QjJu-k7OJHA0foCPcjJoXrC2-0",
+      authDomain: "billingsystemapp-65d4c.firebaseapp.com",
+      projectId: "billingsystemapp-65d4c",
+      storageBucket: "billingsystemapp-65d4c.appspot.com",
+      messagingSenderId: "67583653779",
+      appId: "1:67583653779:web:e37b600d51b09f9e4f9a66"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    async function loadInvoices() {
+      const dateFilter = document.getElementById("searchDate").value.trim();
+      const billFilter = document.getElementById("searchBill").value.trim().toLowerCase();
+
+      let query = db.collection("invoices").orderBy("createdAt", "desc");
+      const snapshot = await query.get();
+
+      const invoiceList = document.getElementById("invoiceList");
+      invoiceList.innerHTML = "";
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const billNo = data.billNo?.toLowerCase() || "";
+        const date = data.date || "";
+        const time = new Date(data.createdAt).toLocaleString('en-IN');
+
+        // Filters
+        if (dateFilter && date !== dateFilter) return;
+        if (billFilter && !billNo.includes(billFilter)) return;
+
+        const div = document.createElement("div");
+        div.className = "invoice-item";
+        div.innerHTML = `
+          <div><span class="bold">🧾 Bill No:</span> ${data.billNo}</div>
+          <div><span class="bold">🕒 Date:</span> ${date} (${time})</div>
+          <div><span class="bold">👨 Staff:</span> ${data.staff || 'Unknown'}</div>
+        `;
+        div.onclick = () => showDetails(div, data);
+        invoiceList.appendChild(div);
+      });
+
+      if (invoiceList.innerHTML === "") {
+        invoiceList.innerHTML = "<p>❌ No invoices found.</p>";
+      }
+    }
+
+    function showDetails(div, data) {
+      // आधी ओपन झालेलं डिटेल्स क्लोज कर
+      const openDetail = document.querySelector(".invoice-details");
+      if (openDetail && openDetail !== div.nextElementSibling) {
+        openDetail.remove();
+      }
+
+      // पुन्हा त्याच्यावर क्लिक केल्यास बंद कर
+      if (div.nextElementSibling && div.nextElementSibling.classList.contains("invoice-details")) {
+        div.nextElementSibling.remove();
+        return;
+      }
+
+      const detailDiv = document.createElement("div");
+      detailDiv.className = "invoice-details";
+
+      let itemsHTML = `<h4>🛒 Items:</h4><ul>`;
+      data.items.forEach(i => {
+        itemsHTML += `<li>${i.name} - ${i.weight} - ₹${i.ymrp} x ${i.qty}</li>`;
+      });
+      itemsHTML += `</ul>`;
+
+      detailDiv.innerHTML = `
+        <div><span class="bold">📄 Bill No:</span> ${data.billNo}</div>
+        <div><span class="bold">👨 Staff:</span> ${data.staff}</div>
+        <div><span class="bold">🕒 Time:</span> ${new Date(data.createdAt).toLocaleString('en-IN')}</div>
+        ${itemsHTML}
+      `;
+
+      div.insertAdjacentElement("afterend", detailDiv);
+    }
+
+    // Load all on page load
+    window.onload = () => {
+      loadInvoices();
+    };
+  </script>
+
+</body>
+</html>
