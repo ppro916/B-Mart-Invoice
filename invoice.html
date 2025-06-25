@@ -75,11 +75,13 @@
     <div style="font-size: 1.5rem; font-weight: bold;">
       B-Mart Billing System</div>
     <div class="inputs">
-      <button onclick="openPopup()">Add New Item</button>
-      <button onclick="openCalculator()">Calculator</button>
-    </div>
-    <div>
-      <button class="admin-access" onclick="accessAdmin()" title="Admin Access">🔐 Admin Panel</button>
+      <button onclick="openPopup()">➕Add New Item</button>
+      
+      <button onclick="openIframe()">📄 Invoices</button>
+      
+      <button onclick="openCalculator()">🧮Calculator</button>
+      
+    <button class="admin-access" onclick="accessAdmin()" title="Admin Access">🔐 Admin Panel</button>
     </div>
   </nav>
 
@@ -93,6 +95,7 @@
 
   <div id="invoice">
     <h2>Invoice</h2>
+    <h3>B-MART BIG BAZZAR</h3>
     <div id="datetime" style="text-align: right; font-weight: bold; margin-top: 10px;"></div>
     <table id="productTable">
       <thead>
@@ -113,6 +116,34 @@
     <div style="text-align: right; font-weight: bold; padding: 1rem;">
       <span id="staffName">Billing Staff: </span>
     </div>
+    <div style="text-align: right; padding: 1rem;">
+      
+      
+      
+      
+<button onclick="saveInvoice()" style="
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+" onmouseover="this.style.backgroundColor='#45a049'; this.style.transform='scale(1.05)'"
+onmouseout="this.style.backgroundColor='#4CAF50'; this.style.transform='scale(1)'"
+onmousedown="this.style.transform='scale(0.95)'"
+onmouseup="this.style.transform='scale(1.05)'">
+  💾 Save Invoice
+</button>
+  
+  
+  
+  
+  
+  <div id="billNumber" style="margin-top: 10px; font-weight: bold;"></div>
+</div>
   </div>
 ...
 
@@ -387,6 +418,66 @@ async function login() {
         alert("❌ Incorrect password!");
       }
     }
+    
+    function getTodayDateKey() {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const yyyy = now.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+async function generateBillNumber() {
+  const todayKey = getTodayDateKey();
+  const snapshot = await db.collection("invoices")
+    .where("date", "==", todayKey)
+    .get();
+
+  const todayCount = snapshot.size + 1;
+  return `${todayKey}-${String(todayCount).padStart(3, '0')}`;
+}
+
+async function saveInvoice() {
+  if (items.length === 0) {
+    alert("❌ No items in invoice!");
+    return;
+  }
+
+  const billNo = await generateBillNumber();
+
+  const invoiceData = {
+    billNo: billNo,
+    date: getTodayDateKey(),
+    createdAt: new Date().toISOString(),
+    staff: loggedInUserName,
+    items: items
+  };
+
+  try {
+    await db.collection("invoices").add(invoiceData);
+    document.getElementById("billNumber").textContent = `✅ Bill No: ${billNo}`;
+    alert("✅ Invoice Saved Successfully!");
+    items = [];
+    renderTable(); // Clear UI
+  } catch (err) {
+    alert("❌ Error saving invoice: " + err.message);
+  }
+}
+
+function openIframe() {
+  document.getElementById('iframeOverlay').style.display = "block";
+  document.getElementById('myIframe').src = "invoices-list.html"; // तुमचं दुसरं पेज
+}
+
+function closeIframe() {
+  document.getElementById('iframeOverlay').style.display = "none";
+  document.getElementById('myIframe').src = "";
+}
   </script>
+  <!-- Iframe Overlay -->
+<div id="iframeOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1000;">
+  <button onclick="closeIframe()" style="position: absolute; top: 10px; right: 10px; z-index: 1001; background: red; color: white; padding: 10px; border: none; border-radius: 5px;">Close</button>
+  <iframe id="myIframe" src="" style="position: absolute; top: 50px; left: 50%; transform: translateX(-50%); width: 90vw; height: 90vh; border: none; border-radius: 10px;"></iframe>
+</div>
 </body>
 </html>
