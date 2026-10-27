@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Billing Invoice</title>
+  <script src="config.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
@@ -410,16 +411,30 @@ async function login() {
       }
     }
 
-    function accessAdmin() {
+    // Admin shortcut: the password is NOT stored in this file. config.js provides the SHA-256 hash
+    // (window.BMART_CONFIG.adminPasswordSha256). Note: this is only a UI gate - real protection
+    // must come from Firebase Authentication + Firestore security rules.
+    async function sha256Hex(text) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function accessAdmin() {
+      const expected = (window.BMART_CONFIG && window.BMART_CONFIG.adminPasswordSha256) || "";
+      if (!expected) {
+        alert("Admin access is not configured. Set adminPasswordSha256 in config.js (see README).");
+        return;
+      }
       const adminPassword = prompt("Enter admin access password:");
-      if (adminPassword === "chiku") {
+      if (!adminPassword) return;
+      if ((await sha256Hex(adminPassword)) === expected.toLowerCase()) {
         window.location.href = "admin.html";
-      } else if (adminPassword) {
+      } else {
         alert("❌ Incorrect password!");
       }
     }
     
-    function getTodayDateKey() {
+        function getTodayDateKey() {
   const now = new Date();
   const dd = String(now.getDate()).padStart(2, '0');
   const mm = String(now.getMonth() + 1).padStart(2, '0');
